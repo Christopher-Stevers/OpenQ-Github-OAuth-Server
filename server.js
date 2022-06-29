@@ -90,6 +90,26 @@ app.get('/logout', async (req, res) => {
 	return res.status(200).json({ isAuthenticated: false });
 });
 
+app.get('/isSignedIn', async (req, res) => {
+	try {
+		const signature = req.signedCookies.signature;
+		const address = req.query.address;
+
+		if (signature === undefined) {
+			return res.status(401).json({ 'status': false, 'error': 'unauthorized' });
+		}
+
+		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
+		if (compareAddress(addressRecovered, address)) {
+			return res.json({ 'status': true });
+		} else {
+			return res.status(401).json({ 'status': false, 'error': 'unauthorized' });
+		}
+	} catch (error) {
+		return res.status(500).json({ 'status': false, error: 'internal_server', error_description: error.message || '' });
+	}
+});
+
 app.get('/verifySignature', async (req, res) => {
 	try {
 		const { signature, address } = req.query;
