@@ -92,7 +92,7 @@ app.get('/logout', async (req, res) => {
 });
 
 app.get('/hasSignature', async (req, res) => {
-	const signature = req.signedCookies.signature;
+	const signature = req.cookies.signature;
 	const { address } = req.query;
 
 	console.log(signature);
@@ -116,7 +116,7 @@ app.post('/verifySignature', async (req, res) => {
 		if (compareAddress(addressRecovered, address)) {
 			console.log('FUCK');
 			res.cookie('signature', signature, {
-				signed: true,
+				signed: false,
 				secure: false,
 				httpOnly: true,
 				expires: dayjs().add(30, 'days').toDate(),
