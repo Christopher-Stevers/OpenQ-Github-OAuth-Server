@@ -90,9 +90,9 @@ app.get('/logout', async (req, res) => {
 	return res.status(200).json({ isAuthenticated: false });
 });
 
-app.get('/isSignedIn', async (req, res) => {
+app.get('/hasSignature', async (req, res) => {
 	try {
-		const signature = req.signedCookies.signature;
+		const signature = req.cookies.signature;
 		const address = req.query.address;
 
 		if (signature === undefined) {
@@ -101,7 +101,7 @@ app.get('/isSignedIn', async (req, res) => {
 
 		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
 		if (compareAddress(addressRecovered, address)) {
-			return res.json({ 'status': true });
+			return res.status(200).json({ 'status': true });
 		} else {
 			return res.status(401).json({ 'status': false, 'error': 'unauthorized' });
 		}
@@ -112,7 +112,8 @@ app.get('/isSignedIn', async (req, res) => {
 
 app.get('/verifySignature', async (req, res) => {
 	try {
-		const { signature, address } = req.query;
+		const signature = req.signedCookies.signature;
+		const { address } = req.query;
 		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
 		if (compareAddress(addressRecovered, address)) {
 			res.cookie('signature', signature, {
