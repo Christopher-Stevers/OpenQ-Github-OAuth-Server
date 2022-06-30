@@ -13,6 +13,7 @@ const port = 3001;
 
 app.use(cors({ credentials: true, origin: process.env.ORIGIN_URL }));
 app.use(cookieParser(process.env.COOKIE_SIGNER));
+app.use(express.json());
 
 app.get('/', async (req, res) => {
 	const app = req.query.app;
@@ -91,31 +92,29 @@ app.get('/logout', async (req, res) => {
 });
 
 app.get('/hasSignature', async (req, res) => {
-	try {
-		const signature = req.cookies.signature;
-		const address = req.query.address;
+	const signature = req.signedCookies.signature;
+	const { address } = req.query;
 
-		if (signature === undefined) {
-			return res.status(401).json({ 'status': false, 'error': 'unauthorized' });
-		}
+	console.log(signature);
 
-		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
-		if (compareAddress(addressRecovered, address)) {
-			return res.status(200).json({ 'status': true });
-		} else {
-			return res.status(401).json({ 'status': false, 'error': 'unauthorized' });
-		}
-	} catch (error) {
-		return res.status(500).json({ 'status': false, error: 'internal_server', error_description: error.message || '' });
+	if (signature === undefined) {
+		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
+	}
+
+	const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
+	if (compareAddress(addressRecovered, address)) {
+		return res.status(200).json({ 'status': true });
+	} else {
+		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
 	}
 });
 
-app.get('/verifySignature', async (req, res) => {
+app.post('/verifySignature', async (req, res) => {
 	try {
-		const signature = req.signedCookies.signature;
-		const { address } = req.query;
+		const { signature, address } = req.body;
 		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
 		if (compareAddress(addressRecovered, address)) {
+			console.log('FUCK');
 			res.cookie('signature', signature, {
 				signed: true,
 				secure: false,
