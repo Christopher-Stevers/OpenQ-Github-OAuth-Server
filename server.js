@@ -6,12 +6,15 @@ const dayjs = require('dayjs');
 const cookieParser = require('cookie-parser');
 const ecdsaRecover = require('./utils')
 
+const { ecdsaRecover, compareAddress } = require('./utils/ecdsaRecover');
+
 require('dotenv').config();
 
 const port = 3001;
 
 app.use(cors({ credentials: true, origin: process.env.ORIGIN_URL }));
 app.use(cookieParser(process.env.COOKIE_SIGNER));
+app.use(express.json());
 
 app.get('/verifySignature', async (req, res) => {
 	const { signedMessage, address } = req.query;
@@ -105,6 +108,42 @@ app.get('/checkAuth', async (req, res) => {
 app.get('/logout', async (req, res) => {
 	res.clearCookie('github_oauth_token');
 	return res.status(200).json({ isAuthenticated: false });
+});
+
+app.get('/hasSignature', async (req, res) => {
+	const signature = req.cookies.signature;
+	const { address } = req.query;
+
+	if (signature === undefined) {
+		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
+	}
+
+	const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
+	if (compareAddress(addressRecovered, address)) {
+		return res.status(200).json({ 'status': true });
+	} else {
+		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
+	}
+});
+
+app.post('/verifySignature', async (req, res) => {
+	try {
+		const { signature, address } = req.body;
+		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
+		if (compareAddress(addressRecovered, address)) {
+			res.cookie('signature', signature, {
+				signed: false,
+				secure: false,
+				httpOnly: true,
+				expires: dayjs().add(30, 'days').toDate(),
+			});
+			res.json({ 'status': true });
+		} else {
+			res.status(401).json({ 'status': false, 'error': 'unauthorized' });
+		}
+	} catch (error) {
+		res.status(500).json({ 'status': false, error: 'internal_server', error_description: error.message || '' });
+	}
 });
 
 app.listen(port, () => {
