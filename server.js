@@ -95,8 +95,6 @@ app.get('/hasSignature', async (req, res) => {
 	const signature = req.cookies.signature;
 	const { address } = req.query;
 
-	console.log(signature);
-
 	if (signature === undefined) {
 		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
 	}
@@ -114,7 +112,6 @@ app.post('/verifySignature', async (req, res) => {
 		const { signature, address } = req.body;
 		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
 		if (compareAddress(addressRecovered, address)) {
-			console.log('FUCK');
 			res.cookie('signature', signature, {
 				signed: false,
 				secure: false,
