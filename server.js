@@ -4,7 +4,6 @@ const app = express();
 const cors = require('cors');
 const dayjs = require('dayjs');
 const cookieParser = require('cookie-parser');
-const ecdsaRecover = require('./utils')
 
 const { ecdsaRecover, compareAddress } = require('./utils/ecdsaRecover');
 
@@ -20,17 +19,17 @@ app.get('/verifySignature', async (req, res) => {
 	const { signedMessage, address } = req.query;
 
 	if (ecdsaRecover(signedMessage, address)) {
-		
+
 		res.cookie('signedMessage', signedMessage, {
 			signed: false,
 			secure: false,
 			httpOnly: true,
 			expires: dayjs().add(30, 'days').toDate(),
 		});
-	
-		res.json({'valid_signature': true});
+
+		res.json({ 'valid_signature': true });
 	} else {
-		res.json({'valid_signature': false});
+		res.json({ 'valid_signature': false });
 	}
 });
 
