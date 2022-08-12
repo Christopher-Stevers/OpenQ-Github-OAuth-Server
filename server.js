@@ -15,6 +15,41 @@ app.use(cors({ credentials: true, origin: process.env.ORIGIN_URL }));
 app.use(cookieParser(process.env.COOKIE_SIGNER));
 app.use(express.json());
 
+
+
+app.post('/verifySignature', async (req, res) => {
+	try {
+		const { signature, address } = req.body;
+
+		if(!signature){
+		res.cookie('signature', "", {
+				signed: false,
+				secure: false,
+				httpOnly: true,
+				expires: dayjs().add(30, 'days').toDate(),
+			});
+			
+			res.json({ 'status': false });
+			}
+			else{
+		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
+		if (compareAddress(addressRecovered, address)) {
+			res.cookie('signature', signature, {
+				signed: false,
+				secure: false,
+				httpOnly: true,
+				expires: dayjs().add(30, 'days').toDate(),
+			});
+			res.json({ 'status': true });
+		} else {
+			res.status(401).json({ 'status': false, 'error': 'unauthorized' });
+		}
+			}
+	} catch (error) {
+		res.status(500).json({ 'status': false, error: 'internal_server', error_description: error.message || '' });
+	}
+});
+
 app.get('/', async (req, res) => {
 	const app = req.query.app;
 	const code = req.query.code;
@@ -96,7 +131,7 @@ app.get('/hasSignature', async (req, res) => {
 	const signature = req.cookies.signature;
 	const { address } = req.query;
 
-	console.log(signature);
+	
 
 	if (signature === undefined|| signature==="") {
 		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
@@ -107,40 +142,6 @@ app.get('/hasSignature', async (req, res) => {
 		return res.status(200).json({ 'status': true });
 	} else {
 		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
-	}
-});
-
-app.post('/verifySignature', async (req, res) => {
-
-	try {
-		const { signature, address } = req.body;
-
-		if(!signature){
-		res.cookie('signature', "", {
-				signed: false,
-				secure: false,
-				httpOnly: true,
-				expires: dayjs().add(30, 'days').toDate(),
-			});
-			
-			res.json({ 'status': false });
-			}
-			else{
-		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
-		if (compareAddress(addressRecovered, address)) {
-			res.cookie('signature', signature, {
-				signed: false,
-				secure: false,
-				httpOnly: true,
-				expires: dayjs().add(30, 'days').toDate(),
-			});
-			res.json({ 'status': true });
-		} else {
-			res.status(401).json({ 'status': false, 'error': 'unauthorized' });
-		}
-			}
-	} catch (error) {
-		res.status(500).json({ 'status': false, error: 'internal_server', error_description: error.message || '' });
 	}
 });
 

@@ -58,4 +58,4 @@ OTHERAPP_ORIGIN=https://yourdomain.com,https://dev.yourdomain.com
 
 # Deploy
 
-## OpenQ-Github-OAuth-Server
+Tag a commit as local, development, staging or production to deploy.
