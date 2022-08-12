@@ -139,7 +139,7 @@ app.get('/hasSignature', async (req, res) => {
 
 	const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
 	if (compareAddress(addressRecovered, address)) {
-		return res.status(200).json({ 'status': true });
+		return res.status(200).json({ 'status': true, addressRecovered });
 	} else {
 		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
 	}
