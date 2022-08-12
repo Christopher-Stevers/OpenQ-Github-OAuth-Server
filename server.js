@@ -42,6 +42,7 @@ app.get('/', async (req, res) => {
 
 				res.json(auth.data);
 			} catch (e) {
+			console.log(e);
 				res.status(e.response.status).json({ error: 'internal_error', error_description: e.message });
 			}
 		} else {
@@ -97,7 +98,7 @@ app.get('/hasSignature', async (req, res) => {
 
 	console.log(signature);
 
-	if (signature === undefined) {
+	if (signature === undefined|| signature==="") {
 		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
 	}
 
@@ -110,8 +111,21 @@ app.get('/hasSignature', async (req, res) => {
 });
 
 app.post('/verifySignature', async (req, res) => {
+
 	try {
 		const { signature, address } = req.body;
+
+		if(!signature){
+		res.cookie('signature', "", {
+				signed: false,
+				secure: false,
+				httpOnly: true,
+				expires: dayjs().add(30, 'days').toDate(),
+			});
+			
+			res.json({ 'status': false });
+			}
+			else{
 		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
 		if (compareAddress(addressRecovered, address)) {
 			res.cookie('signature', signature, {
@@ -124,6 +138,7 @@ app.post('/verifySignature', async (req, res) => {
 		} else {
 			res.status(401).json({ 'status': false, 'error': 'unauthorized' });
 		}
+			}
 	} catch (error) {
 		res.status(500).json({ 'status': false, error: 'internal_server', error_description: error.message || '' });
 	}
