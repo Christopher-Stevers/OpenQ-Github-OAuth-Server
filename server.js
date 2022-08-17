@@ -118,7 +118,7 @@ app.get('/checkAuth', async (req, res) => {
 		return res.status(200).json({ isAuthenticated: false, avatarUrl: null });
 	} else {
 		// Token present but expired -> isAuthenticated: true, login: user login
-		return res.status(200).json({ isAuthenticated: true, avatarUrl: data.avatar_url });
+		return res.status(200).json({ isAuthenticated: true, avatarUrl: data.avatar_url, login: data.login });
 	}
 });
 
