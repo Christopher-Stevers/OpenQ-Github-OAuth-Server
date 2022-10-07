@@ -138,10 +138,11 @@ app.get('/hasSignature', async (req, res) => {
 	}
 
 	const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
+	
+	const adminAddresses = process.env.ADMIN_ADDRESSES.split(",")
+
 	if (compareAddress(addressRecovered, address)) {
-		return res.status(200).json({ 'status': true, addressRecovered });
-	} else {
-		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
+		return res.status(200).json({ 'status': true, addressRecovered, admin: adminAddresses.includes(addressRecovered)  });
 	}
 });
 
