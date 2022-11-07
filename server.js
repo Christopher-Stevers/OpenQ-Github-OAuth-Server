@@ -1,13 +1,15 @@
+require('dotenv').config();
 const axios = require('axios');
 const express = require('express');
 const app = express();
 const cors = require('cors');
 const dayjs = require('dayjs');
 const cookieParser = require('cookie-parser');
+const { Magic } = require('@magic-sdk/admin');
 
 const { ecdsaRecover, compareAddress } = require('./utils/ecdsaRecover');
 
-require('dotenv').config();
+const magic = new Magic(process.env.MAGIC_SECRET_KEY);
 
 const port = 3001;
 
@@ -15,36 +17,44 @@ app.use(cors({ credentials: true, origin: process.env.ORIGIN_URL }));
 app.use(cookieParser(process.env.COOKIE_SIGNER));
 app.use(express.json());
 
-
+app.post('/api/login', async (req, res) => {
+	try {
+		const didToken = req.headers.authorization.substr(7);
+		await magic.token.validate(didToken);
+		res.status(200).json({ authenticated: true });
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+	}
+});
 
 app.post('/verifySignature', async (req, res) => {
 	try {
 		const { signature, address } = req.body;
 
-		if(!signature){
-		res.cookie('signature', "", {
+		if (!signature) {
+			res.cookie('signature', "", {
 				signed: false,
 				secure: false,
 				httpOnly: true,
 				expires: dayjs().add(30, 'days').toDate(),
 			});
-			
+
 			res.json({ 'status': false });
-			}
-			else{
-		const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
-		if (compareAddress(addressRecovered, address)) {
-			res.cookie('signature', signature, {
-				signed: false,
-				secure: false,
-				httpOnly: true,
-				expires: dayjs().add(30, 'days').toDate(),
-			});
-			res.json({ 'status': true });
-		} else {
-			res.status(401).json({ 'status': false, 'error': 'unauthorized' });
 		}
+		else {
+			const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
+			if (compareAddress(addressRecovered, address)) {
+				res.cookie('signature', signature, {
+					signed: false,
+					secure: false,
+					httpOnly: true,
+					expires: dayjs().add(30, 'days').toDate(),
+				});
+				res.json({ 'status': true });
+			} else {
+				res.status(401).json({ 'status': false, 'error': 'unauthorized' });
 			}
+		}
 	} catch (error) {
 		res.status(500).json({ 'status': false, error: 'internal_server', error_description: error.message || '' });
 	}
@@ -77,7 +87,7 @@ app.get('/', async (req, res) => {
 
 				res.json(auth.data);
 			} catch (e) {
-			console.log(e);
+				console.log(e);
 				res.status(e.response.status).json({ error: 'internal_error', error_description: e.message });
 			}
 		} else {
@@ -131,18 +141,18 @@ app.get('/hasSignature', async (req, res) => {
 	const signature = req.cookies.signature;
 	const { address } = req.query;
 
-	
 
-	if (signature === undefined|| signature==="") {
+
+	if (signature === undefined || signature === "") {
 		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
 	}
 
 	const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
-	
-	const adminAddresses = process.env.ADMIN_ADDRESSES.split(",")
+
+	const adminAddresses = process.env.ADMIN_ADDRESSES.split(",");
 
 	if (compareAddress(addressRecovered, address)) {
-		return res.status(200).json({ 'status': true, addressRecovered, admin: adminAddresses.includes(addressRecovered)  });
+		return res.status(200).json({ 'status': true, addressRecovered, admin: adminAddresses.includes(addressRecovered) });
 	}
 });
 
