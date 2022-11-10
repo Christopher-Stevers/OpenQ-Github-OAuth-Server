@@ -133,6 +133,7 @@ app.get('/checkAuth', async (req, res) => {
 		// Token present, but expired
 		// Clear the cookie, return isAuthenticated: false
 		res.clearCookie('github_oauth_token');
+		res.clearCookie('github_oauth_token_unsigned');
 		return res.status(200).json({ isAuthenticated: false, avatarUrl: null });
 	} else {
 		// Token present but expired -> isAuthenticated: true, login: user login
