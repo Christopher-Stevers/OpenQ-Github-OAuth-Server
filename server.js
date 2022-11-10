@@ -107,7 +107,6 @@ app.get('/', async (req, res) => {
 
 app.get('/checkAuth', async (req, res) => {
 	const oauthToken = req.signedCookies.github_oauth_token;
-	console.log('oauthToken in checkAuth', oauthToken);
 
 	if (typeof oauthToken == 'undefined') {
 		// No token at all -> isAuthenticated: false
