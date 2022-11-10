@@ -78,15 +78,15 @@ app.get('/', async (req, res) => {
 					}
 				});
 
-				res.cookie('github_oauth_token', auth.data.access_token, {
-					signed: true,
+				res.cookie('github_oauth_token_unsigned', auth.data.access_token, {
+					signed: false,
 					secure: false,
 					httpOnly: true,
 					expires: dayjs().add(30, 'days').toDate(),
 				});
 
-				res.cookie('github_oauth_token_unsigned', auth.data.access_token, {
-					signed: false,
+				res.cookie('github_oauth_token', auth.data.access_token, {
+					signed: true,
 					secure: false,
 					httpOnly: true,
 					expires: dayjs().add(30, 'days').toDate(),
