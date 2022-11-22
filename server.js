@@ -124,7 +124,8 @@ app.get('/checkAuth', async (req, res) => {
 		status = response.status;
 		data = response.data;
 	} catch (error) {
-		console.error(error);
+		console.error(error?.response?.data);
+		
 	}
 
 
@@ -163,6 +164,11 @@ app.get('/hasSignature', async (req, res) => {
 	if (compareAddress(addressRecovered, address)) {
 		return res.status(200).json({ 'status': true, addressRecovered, admin: adminAddresses.includes(addressRecovered) });
 	}
+	else 		{
+	
+	res.clearCookie('signature');
+	return res.status(200).json({ 'status': false, 'error': 'unauthorized' });}
+
 });
 
 app.listen(port, () => {
