@@ -1,12 +1,11 @@
 # GitHub Multiapp OAuth Server
 
-Add a `.env` file in the root of the project with:
+Add a `.env` file in the root of the project.
+Copy the content from `.env.sample` to `.env`.
 
-```
-OPENQ_ID=5fbd39c6916b7efb63cc
-OPENQ_SECRET=<get from an admin>
-ORIGIN_URL='http://localhost:3000'
-```  
+Contact [FlacoJones](https://github.com/FlacoJones) (Andrew O'Brien) for the OAuth Client Secret (`OPENQ_SECRET=<get from an admin>`) used for the localhost OAuth flow.
+
+We cannot include the OAuth Client Secret in the OpenQ-Github-OAuth-Server .env.sample because when the [Git Guardian](https://www.gitguardian.com/) bot detects the secret, it revokes it.  
 
 A simple express server that can easily be configured to serve multiple OAuth apps.
 
