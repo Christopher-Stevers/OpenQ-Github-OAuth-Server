@@ -1,8 +1,9 @@
 {
-  "name": "github-multiapp-oauth-server",
+  "name": "OpenQ-Github-OAuth-Server",
   "version": "1.0.0",
   "description": "A simple express server that can easily be configured to serve multiple OAuth apps.",
   "main": "server.js",
+	"private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mktcode/github-multiapp-oauth-server.git"

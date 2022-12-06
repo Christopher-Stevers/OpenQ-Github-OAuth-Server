@@ -7,9 +7,9 @@ const dayjs = require('dayjs');
 const cookieParser = require('cookie-parser');
 const { Magic } = require('@magic-sdk/admin');
 
+const magic = new Magic(process.env.MAGIC_SECRET_KEY);
 const { ecdsaRecover, compareAddress } = require('./utils/ecdsaRecover');
 
-const magic = new Magic(process.env.MAGIC_SECRET_KEY);
 
 const port = 3001;
 
@@ -125,9 +125,7 @@ app.get('/checkAuth', async (req, res) => {
 		data = response.data;
 	} catch (error) {
 		console.error(error?.response?.data);
-		
 	}
-
 
 	if (status != 200) {
 		// Token present, but expired
@@ -150,8 +148,6 @@ app.get('/logout', async (req, res) => {
 app.get('/hasSignature', async (req, res) => {
 	const signature = req.cookies.signature;
 	const { address } = req.query;
-
-
 
 	if (signature === undefined || signature === "") {
 		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
