@@ -10,7 +10,6 @@ const { Magic } = require('@magic-sdk/admin');
 const magic = new Magic(process.env.MAGIC_SECRET_KEY);
 const { ecdsaRecover, compareAddress } = require('./utils/ecdsaRecover');
 
-
 const port = 3001;
 
 app.use(cors({ credentials: true, origin: process.env.ORIGIN_URL }));
@@ -22,7 +21,7 @@ app.post('/api/login', async (req, res) => {
 		const didToken = req.headers.authorization.substr(7);
 		await magic.token.validate(didToken);
 		
-		res.cookie('email_auth', "", {
+		res.cookie('email_auth', didToken, {
 			signed: false,
 			secure: false,
 			httpOnly: true,
@@ -150,6 +149,7 @@ app.get('/checkAuth', async (req, res) => {
 app.get('/logout', async (req, res) => {
 	res.clearCookie('github_oauth_token');
 	res.clearCookie('github_oauth_token_unsigned');
+	res.clearCookie('email_auth');
 	return res.status(200).json({ isAuthenticated: false });
 });
 
