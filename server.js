@@ -21,6 +21,14 @@ app.post('/api/login', async (req, res) => {
 	try {
 		const didToken = req.headers.authorization.substr(7);
 		await magic.token.validate(didToken);
+		
+		res.cookie('email_auth', "", {
+			signed: false,
+			secure: false,
+			httpOnly: true,
+			expires: dayjs().add(30, 'days').toDate(),
+		});
+
 		res.status(200).json({ authenticated: true });
 	} catch (error) {
 		res.status(500).json({ error: error.message });
