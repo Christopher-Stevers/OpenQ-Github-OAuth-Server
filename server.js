@@ -17,164 +17,161 @@ app.use(cookieParser(process.env.COOKIE_SIGNER));
 app.use(express.json());
 
 app.post('/api/login', async (req, res) => {
-	try {
-		const didToken = req.headers.authorization.substr(7);
-		await magic.token.validate(didToken);
-		
-		res.cookie('email_auth', didToken, {
-			signed: false,
-			secure: false,
-			httpOnly: true,
-			expires: dayjs().add(30, 'days').toDate(),
-		});
-
-		res.status(200).json({ authenticated: true });
-	} catch (error) {
-		res.status(500).json({ error: error.message });
-	}
+    try {
+        const didToken = req.headers.authorization.substr(7);
+        await magic.token.validate(didToken);
+        console.log("exec", didToken);
+        res.cookie('email_auth', didToken, {
+            signed: false,
+            secure: false,
+            httpOnly: true,
+            expires: dayjs().add(30, 'days').toDate(),
+        });
+        console.log("cookie updated");
+        res.status(200).json({ authenticated: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
-app.post('/verifySignature', async (req, res) => {
-	try {
-		const { signature, address } = req.body;
-
-		if (!signature) {
-			res.cookie('signature', "", {
-				signed: false,
-				secure: false,
-				httpOnly: true,
-				expires: dayjs().add(30, 'days').toDate(),
-			});
-
-			res.json({ 'status': false });
-		}
-		else {
-			const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
-			if (compareAddress(addressRecovered, address)) {
-				res.cookie('signature', signature, {
-					signed: false,
-					secure: false,
-					httpOnly: true,
-					expires: dayjs().add(30, 'days').toDate(),
-				});
-				res.json({ 'status': true });
-			} else {
-				res.status(401).json({ 'status': false, 'error': 'unauthorized' });
-			}
-		}
-	} catch (error) {
-		res.status(500).json({ 'status': false, error: 'internal_server', error_description: error.message || '' });
-	}
-});
 
 app.get('/', async (req, res) => {
-	const app = req.query.app;
-	const code = req.query.code;
-	if (app && code) {
-		const client_id = process.env[app.toUpperCase() + '_ID'];
-		const client_secret = process.env[app.toUpperCase() + '_SECRET'];
-		if (client_id && client_secret) {
-			try {
-				const auth = await axios.post('https://github.com/login/oauth/access_token', {
-					client_id,
-					client_secret,
-					code
-				}, {
-					headers: {
-						Accept: 'application/json'
-					}
-				});
+    const app = req.query.app;
+    const code = req.query.code;
+    if (app && code) {
+        const client_id = process.env[app.toUpperCase() + '_ID'];
+        const client_secret = process.env[app.toUpperCase() + '_SECRET'];
+        if (client_id && client_secret) {
+            try {
+                const auth = await axios.post('https://github.com/login/oauth/access_token', {
+                    client_id,
+                    client_secret,
+                    code
+                }, {
+                    headers: {
+                        Accept: 'application/json'
+                    }
+                });
 
-				res.cookie('github_oauth_token_unsigned', auth.data.access_token, {
-					signed: false,
-					secure: false,
-					httpOnly: true,
-					expires: dayjs().add(30, 'days').toDate(),
-				});
+                res.cookie('github_oauth_token_unsigned', auth.data.access_token, {
+                    signed: false,
+                    secure: false,
+                    httpOnly: true,
+                    expires: dayjs().add(30, 'days').toDate(),
+                });
 
-				res.cookie('github_oauth_token', auth.data.access_token, {
-					signed: true,
-					secure: false,
-					httpOnly: true,
-					expires: dayjs().add(30, 'days').toDate(),
-				});
+                res.cookie('github_oauth_token', auth.data.access_token, {
+                    signed: true,
+                    secure: false,
+                    httpOnly: true,
+                    expires: dayjs().add(30, 'days').toDate(),
+                });
 
-				res.json(auth.data);
-			} catch (e) {
-				console.log(e);
-				res.status(e.response.status).json({ error: 'internal_error', error_description: e.message });
-			}
-		} else {
-			res.status(400).json({ error: 'bad_request', error_description: `App ${app} is not configured. Requires client_id and client_secret` });
-		}
-	} else {
-		res.status(400).json({ error: 'bad_request', error_description: 'No app or code provided.' });
-	}
+                res.json(auth.data);
+            } catch (e) {
+                console.log(e);
+                res.status(e.response.status).json({ error: 'internal_error', error_description: e.message });
+            }
+        } else {
+            res.status(400).json({ error: 'bad_request', error_description: `App ${app} is not configured. Requires client_id and client_secret` });
+        }
+    } else {
+        res.status(400).json({ error: 'bad_request', error_description: 'No app or code provided.' });
+    }
 });
 
+
+
+
+
+
+
 app.get('/checkAuth', async (req, res) => {
-	const oauthToken = req.signedCookies.github_oauth_token;
+    const oauthToken = req.signedCookies.github_oauth_token;
+    const emailToken = req.cookies.email_auth;
 
-	if (typeof oauthToken == 'undefined') {
-		// No token at all -> isAuthenticated: false
-		return res.status(200).json({ isAuthenticated: false, avatarUrl: null });
-	}
+    if (typeof oauthToken == 'undefined' && typeof emailToken == 'undefined') {
+        // No token at all -> isAuthenticated: false
+        return res.status(200).json({ isAuthenticated: false, avatarUrl: null });
+    }
+    let data;
+    if (typeof oauthToken != 'undefined') {
+        let status;
+        try {
+            let response = await axios.get('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `token ${oauthToken}`
+                }
+            });
 
-	let status, data;
-	try {
-		let response = await axios.get('https://api.github.com/user', {
-			headers: {
-				'Authorization': `token ${oauthToken}`
-			}
-		});
+            status = response.status;
+            data = response.data;
+        } catch (error) {
+            console.error(error?.response?.data);
+        }
+        if (status != 200) {
+            // Token present, but expired
+            // Clear the cookie, return isAuthenticated: false
+            res.clearCookie('github_oauth_token');
+            res.clearCookie('github_oauth_token_unsigned');
+            //	return res.status(200).json({ isAuthenticated: false, avatarUrl: null });
+        }
+    }
+    if (emailToken) {
+        try {
+            const didToken = emailToken;
+            console.log(magic.token);
+            await magic.token.validate(emailToken);
+            const issuer = await magic.token.getIssuer(didToken);
+            let userMetadata = await magic.users.getMetadataByIssuer(issuer);//await magic.users.getMetadata(didToken);
 
-		status = response.status;
-		data = response.data;
-	} catch (error) {
-		console.error(error?.response?.data);
-	}
+            const { email } = userMetadata;
+            data = { email, ...data };
+        } catch (error) {
+            console.log("clearing cookie");
+            res.clearCookie('email_auth');
+            console.error("auth", error);
+        }
+    }
+    if (data) {
+        return res.status(200).json(data);
+    }
+    else {
+        return res.status(200).json({ isAuthenticated: false, avatarUrl: null });
+    }
 
-	if (status != 200) {
-		// Token present, but expired
-		// Clear the cookie, return isAuthenticated: false
-		res.clearCookie('github_oauth_token');
-		res.clearCookie('github_oauth_token_unsigned');
-		return res.status(200).json({ isAuthenticated: false, avatarUrl: null });
-	} else {
-		// Token present but expired -> isAuthenticated: true, login: user login
-		return res.status(200).json({ isAuthenticated: true, avatarUrl: data.avatar_url, login: data.login, githubId: data.node_id });
-	}
 });
 
 app.get('/logout', async (req, res) => {
-	res.clearCookie('github_oauth_token');
-	res.clearCookie('github_oauth_token_unsigned');
-	res.clearCookie('email_auth');
-	return res.status(200).json({ isAuthenticated: false });
+    res.clearCookie('github_oauth_token');
+    res.clearCookie('github_oauth_token_unsigned');
+    res.clearCookie('email_auth');
+    return res.status(200).json({ isAuthenticated: false });
 });
 
 app.get('/hasSignature', async (req, res) => {
-	const signature = req.cookies.signature;
-	const { address } = req.query;
+    const signature = req.cookies.signature;
+    const { address } = req.query;
 
-	if (signature === undefined || signature === "") {
-		return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
-	}
+    if (signature === undefined || signature === "") {
+        return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
+    }
 
-	const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
+    const addressRecovered = await ecdsaRecover(signature, 'OpenQ');
 
-	const adminAddresses = process.env.ADMIN_ADDRESSES.split(",");
+    const adminAddresses = process.env.ADMIN_ADDRESSES.split(",");
 
-	if (compareAddress(addressRecovered, address)) {
-		return res.status(200).json({ 'status': true, addressRecovered, admin: adminAddresses.includes(addressRecovered) });
-	}
-	else 		{
-	
-	res.clearCookie('signature');
-	return res.status(200).json({ 'status': false, 'error': 'unauthorized' });}
+    if (compareAddress(addressRecovered, address)) {
+        return res.status(200).json({ 'status': true, addressRecovered, admin: adminAddresses.includes(addressRecovered) });
+    }
+    else {
+
+        res.clearCookie('signature');
+        return res.status(200).json({ 'status': false, 'error': 'unauthorized' });
+    }
 
 });
 
 app.listen(port, () => {
-	console.log(`Server listening on port ${port}`);
+    console.log(`Server listening on port ${port}`);
 });
