@@ -20,14 +20,12 @@ app.post('/api/login', async (req, res) => {
     try {
         const didToken = req.headers.authorization.substr(7);
         await magic.token.validate(didToken);
-        console.log("exec", didToken);
         res.cookie('email_auth', didToken, {
             signed: false,
             secure: false,
             httpOnly: true,
             expires: dayjs().add(30, 'days').toDate(),
         });
-        console.log("cookie updated");
         res.status(200).json({ authenticated: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -120,21 +118,18 @@ app.get('/checkAuth', async (req, res) => {
     if (emailToken) {
         try {
             const didToken = emailToken;
-            console.log(magic.token);
             await magic.token.validate(emailToken);
             const issuer = await magic.token.getIssuer(didToken);
-            let userMetadata = await magic.users.getMetadataByIssuer(issuer);//await magic.users.getMetadata(didToken);
-
+            let userMetadata = await magic.users.getMetadataByIssuer(issuer);
             const { email } = userMetadata;
-            data = { email, ...data };
+            data = { ...data, email, };
         } catch (error) {
-            console.log("clearing cookie");
             res.clearCookie('email_auth');
             console.error("auth", error);
         }
     }
     if (data) {
-        return res.status(200).json(data);
+        return res.status(200).json({ ...data, isAuthenticated: true });
     }
     else {
         return res.status(200).json({ isAuthenticated: false, avatarUrl: null });
